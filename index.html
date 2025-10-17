@@ -135,7 +135,7 @@
         <!-- 🖼️ Projector media area: image first, then full video on reveal -->
         <div style="margin:8px 0">
             <img id="projImage" alt="Question image" style="width:100%;max-height:420px;object-fit:contain;border-radius:12px;background:#000;display:none" />
-            <video id="projVideo" width="100%" style="max-height:420px;border-radius:12px;background:#000;display:none" playsinline></video>
+            <video id="projVideo" width="100%" style="max-height:420px;border-radius:12px;background:#000;display:none" playsinline webkit-playsinline></video>
             <div class=\"muted\">Question: shows a still image. Reveal: loads the full video (may require a click to start with sound).</div>
         </div>
         <div id="projChoices" class="grid" style="grid-template-columns:1fr 1fr"></div>
@@ -173,9 +173,16 @@
     // ======== End config ========
 
     let app, db;
+    // Promise that resolves when Firebase is ready
+    let dbReadyResolve;
+    const dbReady = new Promise(r => dbReadyResolve = r);
+
     window.addEventListener('load', async () => {
         app = firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
+        dbReadyResolve(true);
+        // Now that Firestore exists, process the URL hash
+        routeFromHash();
     });
 
     // Small helpers
@@ -208,11 +215,11 @@
     $('#revealBtn').onclick = revealAndScore;
     $('#resetAnswersBtn').onclick = resetAnswers;
 
-    // Deep link handling (#host-<id> or #join-<pin>)
+    // Deep link handling (#host-<id> or #join-<pin> or #projector-<id>)
     window.addEventListener('hashchange', routeFromHash);
-    routeFromHash();
 
-    function routeFromHash(){
+    async function routeFromHash(){
+        await dbReady;
         const hash = location.hash.replace('#','');
         if(!hash){ show('#home'); return; }
         if(hash.startsWith('host-')){ gameId = hash.slice(5); hostAttach(gameId); return; }
@@ -220,7 +227,8 @@
         if(hash.startsWith('projector-')){ gameId = hash.slice(10); projectorAttach(gameId); return; }
     }
 
-    function projectorAttach(id){
+    async function projectorAttach(id){
+        await dbReady;
         ROLE = 'PROJ';
         gameId = id;
         show('#projector');
@@ -252,6 +260,7 @@
     }
 
     async function hostAttach(id){
+        await dbReady;
         ROLE = 'HOST';
         gameId = id;
         show('#hostLobby');
@@ -398,6 +407,7 @@
                 if(vid.getAttribute('src') !== src){ vid.setAttribute('src', src); vid.load(); }
                 vid.style.display = 'block';
                 vid.controls = true; // show controls so host can play
+                vid.muted = true;   // improves chance of autoplay on reveal
             } else {
                 vid.pause();
                 vid.removeAttribute('src');
