@@ -104,17 +104,6 @@
    "answer":2,
    "image":"images/q1-image.jpeg",
    "videoFull":"videos/q1-video.mp4"}
-<!--                     ,-->
-<!--  {"text":"What happens next? (Bottle flip)",-->
-<!--   "choices":["Perfect cap landing","Knocks over 3 cups","Falls off table","Bounces into bin"],-->
-<!--   "answer":3,-->
-<!--   "image":"images/bottle-still.jpg",-->
-<!--   "videoFull":"videos/bottle-full.mp4"},-->
-<!--  {"text":"What happens next? (Cat vs cucumber)",-->
-<!--   "choices":["Cat ignores it","Cat jumps high","Cat rolls over","Cat meows loudly"],-->
-<!--   "answer":1,-->
-<!--   "image":"images/cat-still.jpg",-->
-<!--   "videoFull":"videos/cat-full.mp4"}-->
 ]
           </textarea>
                 <div class="right"><button id="saveQuestionsBtn">Save Questions</button></div>
@@ -228,6 +217,20 @@
         if(!hash){ show('#home'); return; }
         if(hash.startsWith('host-')){ gameId = hash.slice(5); hostAttach(gameId); return; }
         if(hash.startsWith('join-')){ pin = hash.slice(5); $('#joinPin').value = pin; show('#home'); return; }
+        if(hash.startsWith('projector-')){ gameId = hash.slice(10); projectorAttach(gameId); return; }
+    }
+
+    function projectorAttach(id){
+        ROLE = 'PROJ';
+        gameId = id;
+        show('#projector');
+        unsubGame && unsubGame();
+        unsubGame = db.collection('games').doc(gameId).onSnapshot(snap => {
+            if(!snap.exists){ return; }
+            const g = snap.data();
+            pin = g.pin; $('#projPin').textContent = pin || '—';
+            renderProjector(g);
+        });
     }
 
     // =========================
@@ -391,9 +394,17 @@
         };
         const showVid = (src) => {
             if(!vid) return;
-            if(src){ if(vid.getAttribute('src') !== src){ vid.setAttribute('src', src); vid.load(); }
+            if(src){
+                if(vid.getAttribute('src') !== src){ vid.setAttribute('src', src); vid.load(); }
                 vid.style.display = 'block';
-            } else { vid.pause(); vid.removeAttribute('src'); vid.load(); vid.style.display = 'none'; }
+                vid.controls = true; // show controls so host can play
+            } else {
+                vid.pause();
+                vid.removeAttribute('src');
+                vid.load();
+                vid.style.display = 'none';
+                vid.controls = false;
+            }
         };
 
         if(g.state==='question' && q){
@@ -419,9 +430,11 @@
         }
 
         if(g.reveal && q){
-            // Swap to full clip on reveal
+            // Swap to full clip on reveal, try to auto-play (may require click due to browser policy)
             showImg(null);
             showVid(q.videoFull);
+            vid.play && vid.play().catch(() => { /* user gesture required; host can press play */ });
+
             // Mark correct choice
             $$('#projChoices .option').forEach((el, i)=>{
                 el.classList.toggle('correct', i===q.answer);
@@ -523,7 +536,11 @@
     // For simplicity, we reuse the host subscription; host can just switch to this view:
     const projToggle = document.createElement('button');
     projToggle.textContent = 'Open Projector'; projToggle.className='ghost';
-    projToggle.onclick = () => { show('#projector'); };
+    projToggle.onclick = () => {
+        if(!gameId){ alert('Create or open a host game first.'); return; }
+        const url = `${location.origin}${location.pathname}#projector-${gameId}`;
+        window.open(url, '_blank');
+    };
     $('#header').appendChild(projToggle);
 
 </script>
