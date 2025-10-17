@@ -103,7 +103,7 @@
    "choices":["Rookt dikke jonko","Loopt op zijn vingers weg","Eet spaghetti","Doet een peace teken"],
    "answer":2,
    "image":"https://bob-repetive-ai.github.io/quiz-quiz-quiz/images/q1-image.jpeg",
-   "videoFull":"https://bob-repetive-ai.github.io/quiz-quiz-quiz/images/q1-video.mp4"}
+   "videoFull":"https://bob-repetive-ai.github.io/quiz-quiz-quiz/videos/q1-video.mp4"}
 ]
           </textarea>
                 <div class="right"><button id="saveQuestionsBtn">Save Questions</button></div>
@@ -136,7 +136,7 @@
         <div style="margin:8px 0">
             <img id="projImage" alt="Question image" style="width:100%;max-height:420px;object-fit:contain;border-radius:12px;background:#000;display:none" />
             <video id="projVideo" width="100%" style="max-height:420px;border-radius:12px;background:#000;display:none" playsinline webkit-playsinline></video>
-            <div class=\"muted\">Question: shows a still image. Reveal: loads the full video (may require a click to start with sound).</div>
+<!--            <div class="muted">Question: shows a still image. Reveal: loads the full video (may require a click to start with sound).</div>-->
         </div>
         <div id="projChoices" class="grid" style="grid-template-columns:1fr 1fr"></div>
         <div id="projStats" class="grid" style="margin-top:12px"></div>
@@ -158,8 +158,6 @@
     // =========================
     // 🔧 1) Configure Firebase
     // =========================
-    // Create a Firebase project → Firestore Database (in test mode for quick tryout), then
-    // paste your config below. (Settings → General → Your apps → CDN snippet)
     const firebaseConfig = {
         apiKey: "AIzaSyA-Gti-4uzA5C7wFk0cUoFNzkvT89FH1r0",
         authDomain: "weekendquiz-f026f.firebaseapp.com",
@@ -173,7 +171,6 @@
     // ======== End config ========
 
     let app, db;
-    // Promise that resolves when Firebase is ready
     let dbReadyResolve;
     const dbReady = new Promise(r => dbReadyResolve = r);
 
@@ -181,7 +178,6 @@
         app = firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
         dbReadyResolve(true);
-        // Now that Firestore exists, process the URL hash
         routeFromHash();
     });
 
@@ -195,8 +191,8 @@
 
     // Global state
     let ROLE = 'HOME';
-    let gameId = null, pin = null, hostSecret = null; // hostSecret stored locally for guard‑rails
-    let player = null; // {id, name}
+    let gameId = null, pin = null, hostSecret = null;
+    let player = null;
     let unsubGame = null, unsubPlayers = null;
 
     // UI bindings
@@ -215,7 +211,6 @@
     $('#revealBtn').onclick = revealAndScore;
     $('#resetAnswersBtn').onclick = resetAnswers;
 
-    // Deep link handling (#host-<id> or #join-<pin> or #projector-<id>)
     window.addEventListener('hashchange', routeFromHash);
 
     async function routeFromHash(){
@@ -234,7 +229,7 @@
         show('#projector');
         unsubGame && unsubGame();
         unsubGame = db.collection('games').doc(gameId).onSnapshot(snap => {
-            if(!snap.exists){ return; }
+            if(!snap.exists){ console.error('Game not found:', id); return; }
             const g = snap.data();
             pin = g.pin; $('#projPin').textContent = pin || '—';
             renderProjector(g);
@@ -269,7 +264,6 @@
         $('#projPin').textContent = '…';
         $('#hostRound').innerHTML = '';
 
-        // Subscribe to game + players
         unsubGame && unsubGame();
         unsubPlayers && unsubPlayers();
 
@@ -320,7 +314,6 @@
         const g = (await ref.get()).data();
         let idx = (g.currentQuestionIndex ?? -1) + 1;
         if(!g.questions || idx >= g.questions.length){ await ref.update({ state:'ended' }); return; }
-        // Reset answers for new round
         await resetAnswers();
         await ref.update({ currentQuestionIndex: idx, state: 'question', questionStartAt: now(), reveal:false });
     }
@@ -342,12 +335,10 @@
         const batch = db.batch();
         playersSnap.forEach(doc => {
             const p = doc.data();
-            let add = 0; let delta = 0;
+            let add = 0;
             if(p.answer === correctIndex){
-                // Basic time bonus: up to +500, diminishes over 15s
                 const t = (p.answeredAt && g.questionStartAt) ? (p.answeredAt - g.questionStartAt) : 15000;
-                delta = Math.max(1000 - Math.floor(t/30), 250); // floor @250
-                add = delta;
+                add = Math.max(1000 - Math.floor(t/30), 250);
             }
             batch.update(doc.ref, { score: (p.score||0) + add, lastDelta: add });
         });
@@ -363,7 +354,6 @@
         const title = document.createElement('div');
         title.innerHTML = `<strong>${q.text}</strong>`; box.appendChild(title);
         const stats = document.createElement('div'); stats.className = 'grid';
-        // Aggregate answers quickly (client side) with dynamic choice count.
         const counts = new Array(q.choices.length).fill(0);
         db.collection('games').doc(gameId).collection('players').get().then(snap=>{
             snap.forEach(d=>{ const a = d.data().answer; if(a!=null && counts[a]!=null) counts[a]++; });
@@ -390,6 +380,8 @@
     }
 
     function renderProjector(g){
+        if(!g || !gameId){ return; }
+
         const q = g.questions?.[g.currentQuestionIndex];
         const projQ = $('#projQuestion');
         const projC = $('#projChoices');
@@ -397,23 +389,51 @@
         const img = $('#projImage');
         const vid = $('#projVideo');
 
+        console.log('🎬 Projector render:', {
+            state: g.state,
+            questionIndex: g.currentQuestionIndex,
+            reveal: g.reveal,
+            hasQuestion: !!q,
+            image: q?.image,
+            video: q?.videoFull
+        });
+
         const showImg = (src) => {
             if(!img) return;
             if(src){
-                img.onerror = () => { console.warn('Image failed to load:', src); img.style.display='none'; };
-                img.src = src; img.style.display = 'block';
+                console.log('🖼️ Loading image:', src);
+                img.onerror = () => {
+                    console.error('❌ Image failed to load:', src);
+                    img.style.display='none';
+                };
+                img.onload = () => {
+                    console.log('✅ Image loaded successfully');
+                };
+                img.src = src;
+                img.style.display = 'block';
             } else {
-                img.removeAttribute('src'); img.style.display = 'none';
+                img.removeAttribute('src');
+                img.style.display = 'none';
             }
         };
+
         const showVid = (src) => {
             if(!vid) return;
             if(src){
-                vid.onerror = () => { console.warn('Video failed to load:', src); };
-                if(vid.getAttribute('src') !== src){ vid.setAttribute('src', src); vid.load(); }
+                console.log('🎥 Loading video:', src);
+                vid.onerror = () => {
+                    console.error('❌ Video failed to load:', src);
+                };
+                vid.onloadeddata = () => {
+                    console.log('✅ Video loaded successfully');
+                };
+                if(vid.getAttribute('src') !== src){
+                    vid.setAttribute('src', src);
+                    vid.load();
+                }
                 vid.style.display = 'block';
-                vid.controls = true; // show controls so host can play
-                vid.muted = true;   // improves chance of autoplay on reveal
+                vid.controls = true;
+                vid.muted = true;
             } else {
                 try{ vid.pause(); }catch(e){}
                 vid.removeAttribute('src');
@@ -423,12 +443,31 @@
             }
         };
 
-        if(g.state==='question' && q){
+        // Handle different game states
+        if(g.state === 'lobby'){
+            $('#projTitle').textContent = 'Waiting to start…';
+            projQ.textContent = '—';
+            projC.innerHTML = '';
+            projS.innerHTML = '';
+            showImg(null);
+            showVid(null);
+        }
+        else if(g.state === 'ended'){
+            $('#projTitle').textContent = 'Game Over! 🎉';
+            projQ.textContent = 'Thanks for playing!';
+            projC.innerHTML = '';
+            projS.innerHTML = '';
+            showImg(null);
+            showVid(null);
+        }
+        else if(g.state === 'question' && q){
             $('#projTitle').textContent = `Question ${g.currentQuestionIndex+1}`;
             projQ.textContent = q.text;
-            // Show still image during question, hide video immediately
+
+            // Show still image during question, hide video
             showVid(null);
             showImg(q.image || q.imageUrl || '');
+
             projC.innerHTML = '';
             projS.innerHTML = '';
             q.choices.forEach((c,i)=>{
@@ -437,33 +476,50 @@
                 div.textContent = `${String.fromCharCode(65+i)}. ${c}`;
                 projC.appendChild(div);
             });
-        } else if(g.state==='question' && !q){
+        }
+        else if(g.state === 'question' && !q){
             $('#projTitle').textContent = 'Waiting…';
-            projQ.textContent='—';
-            projC.innerHTML='';
-            projS.innerHTML='';
-            showImg(null); showVid(null);
+            projQ.textContent = '—';
+            projC.innerHTML = '';
+            projS.innerHTML = '';
+            showImg(null);
+            showVid(null);
         }
 
+        // Handle reveal state
         if(g.reveal && q){
-            // Swap to full clip on reveal; attempt autoplay (muted). Host can unmute.
+            console.log('🎯 Revealing answer...');
+
+            // Swap to full video on reveal
             showImg(null);
             showVid(q.videoFull);
-            Promise.resolve().then(()=> vid.play && vid.play()).catch(()=>{/* gesture needed */});
+
+            // Try to autoplay (muted)
+            setTimeout(() => {
+                if(vid && vid.play) {
+                    vid.play()
+                        .then(() => console.log('✅ Video autoplay started'))
+                        .catch(e => console.log('⚠️ Autoplay prevented (user interaction needed):', e.message));
+                }
+            }, 100);
 
             // Mark correct choice
             $$('#projChoices .option').forEach((el, i)=>{
-                el.classList.toggle('correct', i===q.answer);
+                el.classList.toggle('correct', i === q.answer);
             });
-            // Quick stats
+
+            // Show answer stats
             db.collection('games').doc(gameId).collection('players').get().then(snap=>{
                 const counts = new Array(q.choices.length).fill(0);
-                snap.forEach(d=>{ const a = d.data().answer; if(a!=null && counts[a]!=null) counts[a]++; });
+                snap.forEach(d=>{
+                    const a = d.data().answer;
+                    if(a != null && counts[a] != null) counts[a]++;
+                });
                 projS.innerHTML = '';
                 q.choices.forEach((c,i)=>{
                     const row = document.createElement('div');
                     const n = counts[i];
-                    row.innerHTML = `<div class=\"row\" style=\"justify-content:space-between\"><div>${String.fromCharCode(65+i)}. ${c}</div><div class=\"pill\">${n}</div></div>`;
+                    row.innerHTML = `<div class="row" style="justify-content:space-between"><div>${String.fromCharCode(65+i)}. ${c}</div><div class="pill">${n}</div></div>`;
                     projS.appendChild(row);
                 });
             });
@@ -476,18 +532,25 @@
     async function joinGameAsPlayer(){
         pin = $('#joinPin').value.trim();
         const name = $('#playerName').value.trim();
-        if(pin.length<4 || !name){ $('#joinStatus').textContent='Enter a valid PIN and name.'; return; }
+        if(pin.length < 4 || !name){
+            $('#joinStatus').textContent = 'Enter a valid PIN and name.';
+            return;
+        }
 
-        // Lookup game by PIN
         const snap = await db.collection('games').where('pin','==', pin).limit(1).get();
-        if(snap.empty){ $('#joinStatus').textContent = 'Game not found.'; return; }
-        const gref = snap.docs[0].ref; gameId = gref.id;
+        if(snap.empty){
+            $('#joinStatus').textContent = 'Game not found.';
+            return;
+        }
+        const gref = snap.docs[0].ref;
+        gameId = gref.id;
 
-        // Create / Upsert player
         const id = localStorage.getItem('playerId_'+gameId) || uid();
         localStorage.setItem('playerId_'+gameId, id);
         player = { id, name };
-        await gref.collection('players').doc(id).set({ name, score:0, joinedAt: now(), answer: null, answeredAt: null }, { merge:true });
+        await gref.collection('players').doc(id).set({
+            name, score: 0, joinedAt: now(), answer: null, answeredAt: null
+        }, { merge: true });
 
         subscribePlayer(gref);
         $('#playerPin').textContent = pin;
@@ -503,57 +566,73 @@
             if(!snap.exists) return;
             const g = snap.data();
             renderPlayer(g);
-            // Update projector too if open in another tab
-            renderProjector(g);
         });
 
         unsubPlayers = gref.collection('players').doc(localStorage.getItem('playerId_'+gameId)).onSnapshot(snap => {
             const me = snap.data();
-            if(me){ $('#playerScore').textContent = `Score: ${me.score||0}`; if(me.lastDelta){ $('#playerFeedback').innerHTML = `<span class='score-up'>+${me.lastDelta}</span>`; } }
+            if(me){
+                $('#playerScore').textContent = `Score: ${me.score||0}`;
+                if(me.lastDelta){
+                    $('#playerFeedback').innerHTML = `<span class='score-up'>+${me.lastDelta}</span>`;
+                }
+            }
         });
     }
 
     function renderPlayer(g){
         const q = g.questions?.[g.currentQuestionIndex];
         const box = $('#playerChoices');
-        if(g.state==='lobby'){
-            $('#playerQuestion').textContent = 'Waiting for host to start…'; box.innerHTML=''; $('#playerFeedback').textContent=''; return;
-        }
-        if(g.state==='ended'){
-            $('#playerQuestion').textContent = 'Game over! 🎉'; box.innerHTML=''; return; }
 
-        if(g.state==='question' && q){
-            $('#playerQuestion').textContent = q.text; box.innerHTML = '';
+        if(g.state === 'lobby'){
+            $('#playerQuestion').textContent = 'Waiting for host to start…';
+            box.innerHTML = '';
+            $('#playerFeedback').textContent = '';
+            return;
+        }
+        if(g.state === 'ended'){
+            $('#playerQuestion').textContent = 'Game over! 🎉';
+            box.innerHTML = '';
+            return;
+        }
+
+        if(g.state === 'question' && q){
+            $('#playerQuestion').textContent = q.text;
+            box.innerHTML = '';
             q.choices.forEach((c,i)=>{
                 const btn = document.createElement('button');
-                btn.className = 'option'; btn.textContent = `${String.fromCharCode(65+i)}. ${c}`;
+                btn.className = 'option';
+                btn.textContent = `${String.fromCharCode(65+i)}. ${c}`;
                 btn.onclick = () => submitAnswer(i);
                 box.appendChild(btn);
             });
         }
+
         if(g.reveal && q){
-            // After reveal, freeze options and highlight
             $$('#playerChoices .option').forEach((el, i)=>{
-                el.disabled = true; el.classList.toggle('correct', i===q.answer);
+                el.disabled = true;
+                el.classList.toggle('correct', i === q.answer);
             });
         }
     }
 
     async function submitAnswer(i){
-        const ref = db.collection('games').doc(gameId).collection('players').doc(localStorage.getItem('playerId_'+gameId));
+        const ref = db.collection('games').doc(gameId).collection('players')
+            .doc(localStorage.getItem('playerId_'+gameId));
         await ref.update({ answer: i, answeredAt: now() });
         $('#playerFeedback').textContent = 'Answer locked!';
     }
 
     // =========================
-    // 📽️ Projector mode toggle
+    // 📽️ Projector button
     // =========================
-    // Open another tab with #host-<gameId> and click "Projector" via browser bookmark.
-    // For simplicity, we reuse the host subscription; host can just switch to this view:
     const projToggle = document.createElement('button');
-    projToggle.textContent = 'Open Projector'; projToggle.className='ghost';
+    projToggle.textContent = 'Open Projector';
+    projToggle.className = 'ghost';
     projToggle.onclick = () => {
-        if(!gameId){ alert('Create or open a host game first.'); return; }
+        if(!gameId){
+            alert('Create or open a host game first.');
+            return;
+        }
         const url = `${location.origin}${location.pathname}#projector-${gameId}`;
         window.open(url, '_blank');
     };
