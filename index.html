@@ -45,7 +45,7 @@
     <header class="card row" id="header">
         <div style="flex:1 1 auto">
             <h1>Quiz Night 🪩</h1>
-            <div class="muted">LWie weet alles, wie heeft een glazen bol? Wie is het orakel?</div>
+            <div class="muted">Wie weet alles, wie heeft een glazen bol? Wie is het orakel?</div>
         </div>
         <div class="row">
             <button class="ghost" id="goHomeBtn">Home</button>
@@ -136,7 +136,7 @@
         <div style="margin:8px 0">
             <img id="projImage" alt="Question image" style="width:100%;max-height:420px;object-fit:contain;border-radius:12px;background:#000;display:none" />
             <video id="projVideo" width="100%" style="max-height:420px;border-radius:12px;background:#000;display:none" playsinline></video>
-            <div class="muted">During the question: shows a still image. After reveal: plays the full video.</div>
+            <div class=\"muted\">Question: shows a still image. Reveal: loads the full video (may require a click to start with sound).</div>
         </div>
         <div id="projChoices" class="grid" style="grid-template-columns:1fr 1fr"></div>
         <div id="projStats" class="grid" style="margin-top:12px"></div>
@@ -410,9 +410,9 @@
         if(g.state==='question' && q){
             $('#projTitle').textContent = `Question ${g.currentQuestionIndex+1}`;
             projQ.textContent = q.text;
-            // Show still image during question, hide video
-            showImg(q.image || q.imageUrl);
+            // Show still image during question, hide video immediately
             showVid(null);
+            showImg(q.image || q.imageUrl || '');
             projC.innerHTML = '';
             projS.innerHTML = '';
             q.choices.forEach((c,i)=>{
@@ -430,10 +430,10 @@
         }
 
         if(g.reveal && q){
-            // Swap to full clip on reveal, try to auto-play (may require click due to browser policy)
+            // Swap to full clip on reveal; attempt autoplay (muted). Host can unmute.
             showImg(null);
             showVid(q.videoFull);
-            vid.play && vid.play().catch(() => { /* user gesture required; host can press play */ });
+            Promise.resolve().then(()=> vid.play && vid.play()).catch(()=>{/* gesture needed */});
 
             // Mark correct choice
             $$('#projChoices .option').forEach((el, i)=>{
