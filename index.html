@@ -1,486 +1,530 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Vriendenweekend Quiz 🎉</title>
-  <style>
-    :root { --bg:#0b0b12; --card:#141427; --muted:#8b8fb0; --accent:#6cf; --good:#2ecc71; --bad:#ff5d5d; }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:#fff;font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial}
-    .wrap{max-width:980px;margin:0 auto;padding:24px}
-    .card{background:var(--card);border:1px solid #22244a;border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-    h1,h2,h3{margin:0 0 12px}
-    h1{font-size:28px}
-    h2{font-size:22px}
-    .grid{display:grid;gap:16px}
-    @media(min-width:900px){.grid-2{grid-template-columns:1fr 1fr}}
-    button{background:linear-gradient(180deg,#1a9bff,#007bff);border:0;border-radius:12px;color:#fff;padding:12px 16px;font-weight:700;cursor:pointer}
-    button.secondary{background:#2a2d55}
-    button.ghost{background:transparent;border:1px solid #323567}
-    input, textarea{width:100%;background:#0f0f21;border:1px solid #2a2d55;border-radius:10px;color:#fff;padding:12px}
-    .row{display:flex;gap:12px;align-items:center}
-    .muted{color:var(--muted)}
-    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#1b1e44;border:1px solid #2b2e62;font-size:12px}
-    .list{display:grid;gap:8px}
-    .option{padding:12px;border:1px solid #2c2f63;background:#0f1027;border-radius:12px;cursor:pointer}
-    .option.correct{border-color:var(--good)}
-    .option.incorrect{border-color:var(--bad);opacity:.7}
-    .bar{height:10px;background:#2a2d55;border-radius:999px;overflow:hidden}
-    .bar > span{display:block;height:100%;background:var(--accent)}
-    .hidden{display:none}
-    .right{display:flex;justify-content:flex-end}
-    .score-up{color:var(--good);font-weight:700}
-    .error{color:#ff9f9f}
-    .pin{font-size:28px;letter-spacing:4px;font-weight:800}
-    .table{width:100%;border-collapse:collapse}
-    .table th,.table td{border-bottom:1px solid #2a2d55;padding:8px;text-align:left}
-  </style>
-  <!-- Firebase SDKs (use via CDN). Replace with current versions if needed. -->
-  <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
-  <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vriendenweekend Quiz 🎉</title>
+    <style>
+        :root { --bg:#0b0b12; --card:#141427; --muted:#8b8fb0; --accent:#6cf; --good:#2ecc71; --bad:#ff5d5d; }
+        *{box-sizing:border-box}
+        body{margin:0;background:var(--bg);color:#fff;font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial}
+        .wrap{max-width:980px;margin:0 auto;padding:24px}
+        .card{background:var(--card);border:1px solid #22244a;border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+        h1,h2,h3{margin:0 0 12px}
+        h1{font-size:28px}
+        h2{font-size:22px}
+        .grid{display:grid;gap:16px}
+        @media(min-width:900px){.grid-2{grid-template-columns:1fr 1fr}}
+        button{background:linear-gradient(180deg,#1a9bff,#007bff);border:0;border-radius:12px;color:#fff;padding:12px 16px;font-weight:700;cursor:pointer}
+        button.secondary{background:#2a2d55}
+        button.ghost{background:transparent;border:1px solid #323567}
+        input, textarea{width:100%;background:#0f0f21;border:1px solid #2a2d55;border-radius:10px;color:#fff;padding:12px}
+        .row{display:flex;gap:12px;align-items:center}
+        .muted{color:var(--muted)}
+        .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#1b1e44;border:1px solid #2b2e62;font-size:12px}
+        .list{display:grid;gap:8px}
+        .option{padding:12px;border:1px solid #2c2f63;background:#0f1027;border-radius:12px;cursor:pointer}
+        .option.correct{border-color:var(--good)}
+        .option.incorrect{border-color:var(--bad);opacity:.7}
+        .bar{height:10px;background:#2a2d55;border-radius:999px;overflow:hidden}
+        .bar > span{display:block;height:100%;background:var(--accent)}
+        .hidden{display:none}
+        .right{display:flex;justify-content:flex-end}
+        .score-up{color:var(--good);font-weight:700}
+        .error{color:#ff9f9f}
+        .pin{font-size:28px;letter-spacing:4px;font-weight:800}
+        .table{width:100%;border-collapse:collapse}
+        .table th,.table td{border-bottom:1px solid #2a2d55;padding:8px;text-align:left}
+    </style>
+    <!-- Firebase SDKs (use via CDN). Replace with current versions if needed. -->
+    <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <div class="wrap grid">
+<div class="wrap grid">
     <header class="card row" id="header">
-      <div style="flex:1 1 auto">
-        <h1>Quiz Night 🪩</h1>
-        <div class="muted">Wie weet alles, wie heeft een glazen bol? Wie is het orakel?</div>
-      </div>
-      <div class="row">
-        <button class="ghost" id="goHomeBtn">Home</button>
-      </div>
+        <div style="flex:1 1 auto">
+            <h1>Quiz Night 🪩</h1>
+            <div class="muted">LWie weet alles, wie heeft een glazen bol? Wie is het orakel?</div>
+        </div>
+        <div class="row">
+            <button class="ghost" id="goHomeBtn">Home</button>
+        </div>
     </header>
 
     <!-- HOME -->
     <section class="card grid grid-2" id="home">
-      <div>
-        <h2>Host a Game</h2>
-        <p class="muted">Create a PIN, paste questions, share the join link, and control each round.</p>
-        <button id="hostBtn">I am the Host</button>
-      </div>
-      <div>
-        <h2>Join a Game</h2>
-        <div class="grid">
-          <input id="joinPin" placeholder="Game PIN" />
-          <input id="playerName" placeholder="Your name" />
-          <button id="joinBtn">Join</button>
-          <div class="muted" id="joinStatus"></div>
+        <div>
+            <h2>Host a Game</h2>
+            <p class="muted">Create a PIN, paste questions, share the join link, and control each round.</p>
+            <button id="hostBtn">I am the Host</button>
         </div>
-      </div>
+        <div>
+            <h2>Join a Game</h2>
+            <div class="grid">
+                <input id="joinPin" placeholder="Game PIN" />
+                <input id="playerName" placeholder="Your name" />
+                <button id="joinBtn">Join</button>
+                <div class="muted" id="joinStatus"></div>
+            </div>
+        </div>
     </section>
 
     <!-- HOST LOBBY -->
     <section class="card hidden" id="hostLobby">
-      <div class="row" style="justify-content:space-between">
-        <h2>Host Lobby</h2>
-        <button class="secondary" id="copyJoin">Copy Join Link</button>
-      </div>
-      <div class="row" style="gap:24px;align-items:flex-start">
-        <div style="min-width:260px">
-          <div>PIN</div>
-          <div class="pin" id="pinText">—</div>
-          <div class="muted" id="gameIdText">game: —</div>
-          <div class="muted">Share this PIN with players.</div>
-          <div class="row" style="margin-top:12px;gap:8px">
-            <button id="startGameBtn">Start Game ▶</button>
-            <button class="secondary" id="endGameBtn">End</button>
-          </div>
+        <div class="row" style="justify-content:space-between">
+            <h2>Host Lobby</h2>
+            <button class="secondary" id="copyJoin">Copy Join Link</button>
         </div>
-        <div style="flex:1">
-          <h3>Players</h3>
-          <div id="playersList" class="list"></div>
+        <div class="row" style="gap:24px;align-items:flex-start">
+            <div style="min-width:260px">
+                <div>PIN</div>
+                <div class="pin" id="pinText">—</div>
+                <div class="muted" id="gameIdText">game: —</div>
+                <div class="muted">Share this PIN with players.</div>
+                <div class="row" style="margin-top:12px;gap:8px">
+                    <button id="startGameBtn">Start Game ▶</button>
+                    <button class="secondary" id="endGameBtn">End</button>
+                </div>
+            </div>
+            <div style="flex:1">
+                <h3>Players</h3>
+                <div id="playersList" class="list"></div>
+            </div>
         </div>
-      </div>
-      <hr style="border-color:#2a2d55;margin:16px 0"/>
-      <div class="grid grid-2">
-        <div>
-          <h3>Questions JSON</h3>
-          <p class="muted">Paste questions as JSON array. Example provided.</p>
-          <textarea id="questionsJson" rows="12">
+        <hr style="border-color:#2a2d55;margin:16px 0"/>
+        <div class="grid grid-2">
+            <div>
+                <h3>Questions JSON</h3>
+                <p class="muted">Paste questions as JSON array. Example provided.</p>
+                <textarea id="questionsJson" rows="12">
 [
-  {"text":"Wie weet wat er hierna gebeurd?","choices":["Aap","Mies","Noot","Wim"],"answer":1},
-  {"text":"Wie weet wat er hierna gebeurd?","choices":["Aap","Mies","Noot","Wim"],"answer":1},
-  {"text":"Wie weet wat er hierna gebeurd?","choices":["Aap","Mies","Noot","Wim"],"answer":1},
-  {"text":"Wie weet wat er hierna gebeurd?","choices":["Aap","Mies","Noot","Wim"],"answer":1},
-  {"text":"Wie weet wat er hierna gebeurd?","choices":["Aap","Mies","Noot","Wim"],"answer":1},
-  {"text":"Wie weet wat er hierna gebeurd?","choices":["Aap","Mies","Noot","Wim"],"answer":1},
-  {"text":"Wie weet wat er hierna gebeurd?","choices":["Aap","Mies","Noot","Wim"],"answer":1},
-  {"text":"Wie weet wat er hierna gebeurd?","choices":["Aap","Mies","Noot","Wim"],"answer":1}
+  {"text":"Wat gebeurt er hierna?",
+   "choices":["Rookt dikke jonko","Loopt op zijn vingers weg","Eet spaghetti","Doet een peace teken"],
+   "answer":2,
+   "image":"images/q1-image.jpeg",
+   "videoFull":"videos/q1-video.mp4"}
+<!--                     ,-->
+<!--  {"text":"What happens next? (Bottle flip)",-->
+<!--   "choices":["Perfect cap landing","Knocks over 3 cups","Falls off table","Bounces into bin"],-->
+<!--   "answer":3,-->
+<!--   "image":"images/bottle-still.jpg",-->
+<!--   "videoFull":"videos/bottle-full.mp4"},-->
+<!--  {"text":"What happens next? (Cat vs cucumber)",-->
+<!--   "choices":["Cat ignores it","Cat jumps high","Cat rolls over","Cat meows loudly"],-->
+<!--   "answer":1,-->
+<!--   "image":"images/cat-still.jpg",-->
+<!--   "videoFull":"videos/cat-full.mp4"}-->
 ]
           </textarea>
-          <div class="right"><button id="saveQuestionsBtn">Save Questions</button></div>
-          <div class="muted" id="qStatus"></div>
+                <div class="right"><button id="saveQuestionsBtn">Save Questions</button></div>
+                <div class="muted" id="qStatus"></div>
+            </div>
+            <div>
+                <h3>Current Round</h3>
+                <div id="hostRound" class="list"></div>
+                <div class="row" style="gap:8px;margin-top:8px">
+                    <button id="nextQuestionBtn">Next Question ➡</button>
+                    <button class="secondary" id="revealBtn">Reveal & Score ✅</button>
+                    <button class="ghost" id="resetAnswersBtn">Reset Answers</button>
+                </div>
+                <div class="muted" id="hostInfo"></div>
+            </div>
         </div>
-        <div>
-          <h3>Current Round</h3>
-          <div id="hostRound" class="list"></div>
-          <div class="row" style="gap:8px;margin-top:8px">
-            <button id="nextQuestionBtn">Next Question ➡</button>
-            <button class="secondary" id="revealBtn">Reveal & Score ✅</button>
-            <button class="ghost" id="resetAnswersBtn">Reset Answers</button>
-          </div>
-          <div class="muted" id="hostInfo"></div>
-        </div>
-      </div>
-      <hr style="border-color:#2a2d55;margin:16px 0"/>
-      <h3>Scoreboard</h3>
-      <table class="table" id="scoreTable"></table>
+        <hr style="border-color:#2a2d55;margin:16px 0"/>
+        <h3>Scoreboard</h3>
+        <table class="table" id="scoreTable"></table>
     </section>
 
     <!-- HOST SCREEN (project mode) -->
     <section class="card hidden" id="projector">
-      <div class="row" style="justify-content:space-between">
-        <h2 id="projTitle">Waiting to start…</h2>
-        <div class="pill">PIN <span id="projPin">—</span></div>
-      </div>
-      <div id="projQuestion" style="font-size:24px;margin:12px 0">—</div>
-      <div id="projChoices" class="grid" style="grid-template-columns:1fr 1fr"></div>
-      <div id="projStats" class="grid" style="margin-top:12px"></div>
+        <div class="row" style="justify-content:space-between">
+            <h2 id="projTitle">Waiting to start…</h2>
+            <div class="pill">PIN <span id="projPin">—</span></div>
+        </div>
+        <div id="projQuestion" style="font-size:24px;margin:12px 0">—</div>
+        <!-- 🖼️ Projector media area: image first, then full video on reveal -->
+        <div style="margin:8px 0">
+            <img id="projImage" alt="Question image" style="width:100%;max-height:420px;object-fit:contain;border-radius:12px;background:#000;display:none" />
+            <video id="projVideo" width="100%" style="max-height:420px;border-radius:12px;background:#000;display:none" playsinline></video>
+            <div class="muted">During the question: shows a still image. After reveal: plays the full video.</div>
+        </div>
+        <div id="projChoices" class="grid" style="grid-template-columns:1fr 1fr"></div>
+        <div id="projStats" class="grid" style="margin-top:12px"></div>
     </section>
 
     <!-- PLAYER VIEW -->
     <section class="card hidden" id="player">
-      <h2 id="playerHeader">Waiting Room</h2>
-      <div class="muted">Game PIN: <span id="playerPin">—</span></div>
-      <div id="playerQuestion" style="font-size:20px;margin:10px 0">—</div>
-      <div id="playerChoices" class="grid"></div>
-      <div id="playerFeedback" class="muted"></div>
-      <div id="playerScore" class="pill" style="margin-top:8px">Score: 0</div>
+        <h2 id="playerHeader">Waiting Room</h2>
+        <div class="muted">Game PIN: <span id="playerPin">—</span></div>
+        <div id="playerQuestion" style="font-size:20px;margin:10px 0">—</div>
+        <div id="playerChoices" class="grid"></div>
+        <div id="playerFeedback" class="muted"></div>
+        <div id="playerScore" class="pill" style="margin-top:8px">Score: 0</div>
     </section>
 
-  </div>
+</div>
 
 <script>
-// =========================
-// 🔧 1) Configure Firebase
-// =========================
-// Create a Firebase project → Firestore Database (in test mode for quick tryout), then
-// paste your config below. (Settings → General → Your apps → CDN snippet)
-const firebaseConfig = {
-  apiKey: "AIzaSyA-Gti-4uzA5C7wFk0cUoFNzkvT89FH1r0",
-  authDomain: "weekendquiz-f026f.firebaseapp.com",
-  projectId: "weekendquiz-f026f",
-  storageBucket: "weekendquiz-f026f.firebasestorage.app",
-  messagingSenderId: "994286086417",
-  appId: "1:994286086417:web:50b34673eeeac22ce644b0",
-  measurementId: "G-H360LX3K8Z"
-};
+    // =========================
+    // 🔧 1) Configure Firebase
+    // =========================
+    // Create a Firebase project → Firestore Database (in test mode for quick tryout), then
+    // paste your config below. (Settings → General → Your apps → CDN snippet)
+    const firebaseConfig = {
+        apiKey: "AIzaSyA-Gti-4uzA5C7wFk0cUoFNzkvT89FH1r0",
+        authDomain: "weekendquiz-f026f.firebaseapp.com",
+        projectId: "weekendquiz-f026f",
+        storageBucket: "weekendquiz-f026f.firebasestorage.app",
+        messagingSenderId: "994286086417",
+        appId: "1:994286086417:web:50b34673eeeac22ce644b0",
+        measurementId: "G-H360LX3K8Z"
+    };
 
-// ======== End config ========
+    // ======== End config ========
 
-let app, db;
-window.addEventListener('load', async () => {
-  app = firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
-});
+    let app, db;
+    window.addEventListener('load', async () => {
+        app = firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+    });
 
-// Small helpers
-const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
-const show = id => { $$('#home, #hostLobby, #player, #projector').forEach(el=>el.classList.add('hidden')); $(id).classList.remove('hidden'); };
-const randPin = () => Math.floor(100000 + Math.random()*900000).toString();
-const uid = () => Math.random().toString(36).slice(2, 10);
-const now = () => Date.now();
+    // Small helpers
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const show = id => { $$('#home, #hostLobby, #player, #projector').forEach(el=>el.classList.add('hidden')); $(id).classList.remove('hidden'); };
+    const randPin = () => Math.floor(100000 + Math.random()*900000).toString();
+    const uid = () => Math.random().toString(36).slice(2, 10);
+    const now = () => Date.now();
 
-// Global state
-let ROLE = 'HOME';
-let gameId = null, pin = null, hostSecret = null; // hostSecret stored locally for guard‑rails
-let player = null; // {id, name}
-let unsubGame = null, unsubPlayers = null;
+    // Global state
+    let ROLE = 'HOME';
+    let gameId = null, pin = null, hostSecret = null; // hostSecret stored locally for guard‑rails
+    let player = null; // {id, name}
+    let unsubGame = null, unsubPlayers = null;
 
-// UI bindings
-$('#goHomeBtn').onclick = () => { location.hash = ''; show('#home'); };
-$('#hostBtn').onclick = createGameAsHost;
-$('#joinBtn').onclick = joinGameAsPlayer;
-$('#copyJoin').onclick = async () => {
-  const url = location.origin + location.pathname + `#join-${pin}`;
-  await navigator.clipboard.writeText(`Join with PIN ${pin}: ${url}`);
-  alert('Join link copied!');
-};
-$('#saveQuestionsBtn').onclick = saveQuestions;
-$('#startGameBtn').onclick = () => setState({ state: 'question', currentQuestionIndex: 0, questionStartAt: now(), reveal: false });
-$('#endGameBtn').onclick = () => setState({ state: 'ended' });
-$('#nextQuestionBtn').onclick = nextQuestion;
-$('#revealBtn').onclick = revealAndScore;
-$('#resetAnswersBtn').onclick = resetAnswers;
+    // UI bindings
+    $('#goHomeBtn').onclick = () => { location.hash = ''; show('#home'); };
+    $('#hostBtn').onclick = createGameAsHost;
+    $('#joinBtn').onclick = joinGameAsPlayer;
+    $('#copyJoin').onclick = async () => {
+        const url = location.origin + location.pathname + `#join-${pin}`;
+        await navigator.clipboard.writeText(`Join with PIN ${pin}: ${url}`);
+        alert('Join link copied!');
+    };
+    $('#saveQuestionsBtn').onclick = saveQuestions;
+    $('#startGameBtn').onclick = () => setState({ state: 'question', currentQuestionIndex: 0, questionStartAt: now(), reveal: false });
+    $('#endGameBtn').onclick = () => setState({ state: 'ended' });
+    $('#nextQuestionBtn').onclick = nextQuestion;
+    $('#revealBtn').onclick = revealAndScore;
+    $('#resetAnswersBtn').onclick = resetAnswers;
 
-// Deep link handling (#host-<id> or #join-<pin>)
-window.addEventListener('hashchange', routeFromHash);
-routeFromHash();
+    // Deep link handling (#host-<id> or #join-<pin>)
+    window.addEventListener('hashchange', routeFromHash);
+    routeFromHash();
 
-function routeFromHash(){
-  const hash = location.hash.replace('#','');
-  if(!hash){ show('#home'); return; }
-  if(hash.startsWith('host-')){ gameId = hash.slice(5); hostAttach(gameId); return; }
-  if(hash.startsWith('join-')){ pin = hash.slice(5); $('#joinPin').value = pin; show('#home'); return; }
-}
-
-// =========================
-// 👑 Host logic
-// =========================
-async function createGameAsHost(){
-  ROLE = 'HOST';
-  hostSecret = localStorage.getItem('hostSecret') || uid();
-  localStorage.setItem('hostSecret', hostSecret);
-
-  pin = randPin();
-  const ref = await db.collection('games').add({
-    pin, state: 'lobby', currentQuestionIndex: -1, createdAt: now(), hostSecret,
-    questionStartAt: null, reveal: false, qCount: 0
-  });
-  gameId = ref.id;
-  location.hash = `host-${gameId}`;
-  hostAttach(gameId);
-}
-
-async function hostAttach(id){
-  ROLE = 'HOST';
-  gameId = id;
-  show('#hostLobby');
-  $('#pinText').textContent = '…';
-  $('#gameIdText').textContent = `game: ${gameId}`;
-  $('#projPin').textContent = '…';
-  $('#hostRound').innerHTML = '';
-
-  // Subscribe to game + players
-  unsubGame && unsubGame();
-  unsubPlayers && unsubPlayers();
-
-  unsubGame = db.collection('games').doc(gameId).onSnapshot(snap => {
-    if(!snap.exists){ alert('Game not found.'); return; }
-    const g = snap.data();
-    pin = g.pin; $('#pinText').textContent = pin; $('#projPin').textContent = pin;
-    renderHostRound(g);
-    renderProjector(g);
-  });
-
-  unsubPlayers = db.collection('games').doc(gameId).collection('players')
-    .orderBy('joinedAt').onSnapshot(renderPlayers);
-}
-
-async function saveQuestions(){
-  try{
-    const arr = JSON.parse($('#questionsJson').value);
-    if(!Array.isArray(arr)) throw new Error('Must be an array');
-    await db.collection('games').doc(gameId).update({ questions: arr, qCount: arr.length });
-    $('#qStatus').textContent = `Saved ${arr.length} questions.`;
-  }catch(e){ $('#qStatus').textContent = 'Error: ' + e.message; }
-}
-
-function renderPlayers(qs){
-  const el = $('#playersList');
-  el.innerHTML = '';
-  qs.forEach(doc => {
-    const p = doc.data();
-    const d = document.createElement('div');
-    d.className = 'row';
-    d.innerHTML = `<span class="pill">${p.name}</span><span class="muted">${p.score||0} pts</span>`;
-    el.appendChild(d);
-  });
-  renderScoreboard();
-}
-
-async function setState(patch){
-  const docRef = db.collection('games').doc(gameId);
-  const snap = await docRef.get();
-  const g = snap.data();
-  if(g.hostSecret && g.hostSecret !== hostSecret){ alert('Not this game\'s host.'); return; }
-  await docRef.update(patch);
-}
-
-async function nextQuestion(){
-  const ref = db.collection('games').doc(gameId);
-  const g = (await ref.get()).data();
-  let idx = (g.currentQuestionIndex ?? -1) + 1;
-  if(!g.questions || idx >= g.questions.length){ await ref.update({ state:'ended' }); return; }
-  // Reset answers for new round
-  await resetAnswers();
-  await ref.update({ currentQuestionIndex: idx, state: 'question', questionStartAt: now(), reveal:false });
-}
-
-async function resetAnswers(){
-  const playersSnap = await db.collection('games').doc(gameId).collection('players').get();
-  const batch = db.batch();
-  playersSnap.forEach(doc => { batch.update(doc.ref, { answer: null, answeredAt: null, lastDelta: 0 }); });
-  await batch.commit();
-}
-
-async function revealAndScore(){
-  const gameRef = db.collection('games').doc(gameId);
-  const g = (await gameRef.get()).data();
-  const q = g.questions?.[g.currentQuestionIndex];
-  if(!q){ return; }
-  const correctIndex = q.answer;
-  const playersSnap = await gameRef.collection('players').get();
-  const batch = db.batch();
-  playersSnap.forEach(doc => {
-    const p = doc.data();
-    let add = 0; let delta = 0;
-    if(p.answer === correctIndex){
-      // Basic time bonus: up to +500, diminishes over 15s
-      const t = (p.answeredAt && g.questionStartAt) ? (p.answeredAt - g.questionStartAt) : 15000;
-      delta = Math.max(1000 - Math.floor(t/30), 250); // floor @250
-      add = delta;
+    function routeFromHash(){
+        const hash = location.hash.replace('#','');
+        if(!hash){ show('#home'); return; }
+        if(hash.startsWith('host-')){ gameId = hash.slice(5); hostAttach(gameId); return; }
+        if(hash.startsWith('join-')){ pin = hash.slice(5); $('#joinPin').value = pin; show('#home'); return; }
     }
-    batch.update(doc.ref, { score: (p.score||0) + add, lastDelta: add });
-  });
-  await batch.commit();
-  await gameRef.update({ reveal:true });
-}
 
-function renderHostRound(g){
-  $('#hostInfo').textContent = `State: ${g.state} · Q: ${g.currentQuestionIndex+1}/${g.qCount||0} · Reveal: ${!!g.reveal}`;
-  const box = $('#hostRound'); box.innerHTML = '';
-  const q = g.questions?.[g.currentQuestionIndex];
-  if(!q){ box.innerHTML = '<div class="muted">No active question.</div>'; return; }
-  const title = document.createElement('div');
-  title.innerHTML = `<strong>${q.text}</strong>`; box.appendChild(title);
-  const stats = document.createElement('div'); stats.className = 'grid';
-  // Aggregate answers quickly (client side).
-  const counts = [0,0,0,0];
-  db.collection('games').doc(gameId).collection('players').get().then(snap=>{
-    snap.forEach(d=>{ const a = d.data().answer; if(a!=null && counts[a]!=null) counts[a]++; });
-    q.choices.forEach((c,i)=>{
-      const row = document.createElement('div');
-      const pct = (counts[i] / Math.max(1, snap.size))*100;
-      row.innerHTML = `<div>${String.fromCharCode(65+i)}. ${c}</div><div class="bar"><span style="width:${pct}%"></span></div>`;
-      stats.appendChild(row);
-    });
-  });
-  box.appendChild(stats);
-}
+    // =========================
+    // 👑 Host logic
+    // =========================
+    async function createGameAsHost(){
+        ROLE = 'HOST';
+        hostSecret = localStorage.getItem('hostSecret') || uid();
+        localStorage.setItem('hostSecret', hostSecret);
 
-async function renderScoreboard(){
-  const table = $('#scoreTable');
-  const snap = await db.collection('games').doc(gameId).collection('players').orderBy('score','desc').get();
-  table.innerHTML = '<tr><th>Player</th><th>Score</th><th>Δ</th></tr>';
-  snap.forEach(doc => {
-    const p = doc.data();
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${p.name}</td><td>${p.score||0}</td><td>${p.lastDelta?`<span class='score-up'>+${p.lastDelta}</span>`:''}</td>`;
-    table.appendChild(tr);
-  });
-}
+        pin = randPin();
+        const ref = await db.collection('games').add({
+            pin, state: 'lobby', currentQuestionIndex: -1, createdAt: now(), hostSecret,
+            questionStartAt: null, reveal: false, qCount: 0
+        });
+        gameId = ref.id;
+        location.hash = `host-${gameId}`;
+        hostAttach(gameId);
+    }
 
-function renderProjector(g){
-  const q = g.questions?.[g.currentQuestionIndex];
-  const projQ = $('#projQuestion'); const projC = $('#projChoices'); const projS = $('#projStats');
-  if(g.state==='question' && q){
-    $('#projTitle').textContent = `Question ${g.currentQuestionIndex+1}`;
-    projQ.textContent = q.text; projC.innerHTML = ''; projS.innerHTML = '';
-    q.choices.forEach((c,i)=>{
-      const div = document.createElement('div');
-      div.className = 'option';
-      div.textContent = `${String.fromCharCode(65+i)}. ${c}`;
-      projC.appendChild(div);
-    });
-  } else if(g.state==='question' && !q){
-    $('#projTitle').textContent = 'Waiting…'; projQ.textContent='—'; projC.innerHTML='';
-  }
-  if(g.reveal && q){
-    // Show which choice was correct
-    $$('#projChoices .option').forEach((el, i)=>{
-      el.classList.toggle('correct', i===q.answer);
-    });
-    // Show quick stats
-    db.collection('games').doc(gameId).collection('players').get().then(snap=>{
-      const counts = [0,0,0,0]; snap.forEach(d=>{ const a = d.data().answer; if(a!=null && counts[a]!=null) counts[a]++; });
-      projS.innerHTML = '';
-      q.choices.forEach((c,i)=>{
-        const row = document.createElement('div');
-        const n = counts[i];
-        row.innerHTML = `<div class="row" style="justify-content:space-between"><div>${String.fromCharCode(65+i)}. ${c}</div><div class="pill">${n}</div></div>`;
-        projS.appendChild(row);
-      });
-    });
-  }
-}
+    async function hostAttach(id){
+        ROLE = 'HOST';
+        gameId = id;
+        show('#hostLobby');
+        $('#pinText').textContent = '…';
+        $('#gameIdText').textContent = `game: ${gameId}`;
+        $('#projPin').textContent = '…';
+        $('#hostRound').innerHTML = '';
 
-// =========================
-// 🙋 Player logic
-// =========================
-async function joinGameAsPlayer(){
-  pin = $('#joinPin').value.trim();
-  const name = $('#playerName').value.trim();
-  if(pin.length<4 || !name){ $('#joinStatus').textContent='Enter a valid PIN and name.'; return; }
+        // Subscribe to game + players
+        unsubGame && unsubGame();
+        unsubPlayers && unsubPlayers();
 
-  // Lookup game by PIN
-  const snap = await db.collection('games').where('pin','==', pin).limit(1).get();
-  if(snap.empty){ $('#joinStatus').textContent = 'Game not found.'; return; }
-  const gref = snap.docs[0].ref; gameId = gref.id;
+        unsubGame = db.collection('games').doc(gameId).onSnapshot(snap => {
+            if(!snap.exists){ alert('Game not found.'); return; }
+            const g = snap.data();
+            pin = g.pin; $('#pinText').textContent = pin; $('#projPin').textContent = pin;
+            renderHostRound(g);
+            renderProjector(g);
+        });
 
-  // Create / Upsert player
-  const id = localStorage.getItem('playerId_'+gameId) || uid();
-  localStorage.setItem('playerId_'+gameId, id);
-  player = { id, name };
-  await gref.collection('players').doc(id).set({ name, score:0, joinedAt: now(), answer: null, answeredAt: null }, { merge:true });
+        unsubPlayers = db.collection('games').doc(gameId).collection('players')
+            .orderBy('joinedAt').onSnapshot(renderPlayers);
+    }
 
-  subscribePlayer(gref);
-  $('#playerPin').textContent = pin;
-  $('#playerHeader').textContent = `${name}`;
-  show('#player');
-}
+    async function saveQuestions(){
+        try{
+            const arr = JSON.parse($('#questionsJson').value);
+            if(!Array.isArray(arr)) throw new Error('Must be an array');
+            await db.collection('games').doc(gameId).update({ questions: arr, qCount: arr.length });
+            $('#qStatus').textContent = `Saved ${arr.length} questions.`;
+        }catch(e){ $('#qStatus').textContent = 'Error: ' + e.message; }
+    }
 
-function subscribePlayer(gref){
-  unsubGame && unsubGame();
-  unsubPlayers && unsubPlayers();
+    function renderPlayers(qs){
+        const el = $('#playersList');
+        el.innerHTML = '';
+        qs.forEach(doc => {
+            const p = doc.data();
+            const d = document.createElement('div');
+            d.className = 'row';
+            d.innerHTML = `<span class="pill">${p.name}</span><span class="muted">${p.score||0} pts</span>`;
+            el.appendChild(d);
+        });
+        renderScoreboard();
+    }
 
-  unsubGame = gref.onSnapshot(snap => {
-    if(!snap.exists) return;
-    const g = snap.data();
-    renderPlayer(g);
-    // Update projector too if open in another tab
-    renderProjector(g);
-  });
+    async function setState(patch){
+        const docRef = db.collection('games').doc(gameId);
+        const snap = await docRef.get();
+        const g = snap.data();
+        if(g.hostSecret && g.hostSecret !== hostSecret){ alert('Not this game\'s host.'); return; }
+        await docRef.update(patch);
+    }
 
-  unsubPlayers = gref.collection('players').doc(localStorage.getItem('playerId_'+gameId)).onSnapshot(snap => {
-    const me = snap.data();
-    if(me){ $('#playerScore').textContent = `Score: ${me.score||0}`; if(me.lastDelta){ $('#playerFeedback').innerHTML = `<span class='score-up'>+${me.lastDelta}</span>`; } }
-  });
-}
+    async function nextQuestion(){
+        const ref = db.collection('games').doc(gameId);
+        const g = (await ref.get()).data();
+        let idx = (g.currentQuestionIndex ?? -1) + 1;
+        if(!g.questions || idx >= g.questions.length){ await ref.update({ state:'ended' }); return; }
+        // Reset answers for new round
+        await resetAnswers();
+        await ref.update({ currentQuestionIndex: idx, state: 'question', questionStartAt: now(), reveal:false });
+    }
 
-function renderPlayer(g){
-  const q = g.questions?.[g.currentQuestionIndex];
-  const box = $('#playerChoices');
-  if(g.state==='lobby'){
-    $('#playerQuestion').textContent = 'Waiting for host to start…'; box.innerHTML=''; $('#playerFeedback').textContent=''; return;
-  }
-  if(g.state==='ended'){
-    $('#playerQuestion').textContent = 'Game over! 🎉'; box.innerHTML=''; return; }
+    async function resetAnswers(){
+        const playersSnap = await db.collection('games').doc(gameId).collection('players').get();
+        const batch = db.batch();
+        playersSnap.forEach(doc => { batch.update(doc.ref, { answer: null, answeredAt: null, lastDelta: 0 }); });
+        await batch.commit();
+    }
 
-  if(g.state==='question' && q){
-    $('#playerQuestion').textContent = q.text; box.innerHTML = '';
-    q.choices.forEach((c,i)=>{
-      const btn = document.createElement('button');
-      btn.className = 'option'; btn.textContent = `${String.fromCharCode(65+i)}. ${c}`;
-      btn.onclick = () => submitAnswer(i);
-      box.appendChild(btn);
-    });
-  }
-  if(g.reveal && q){
-    // After reveal, freeze options and highlight
-    $$('#playerChoices .option').forEach((el, i)=>{
-      el.disabled = true; el.classList.toggle('correct', i===q.answer);
-    });
-  }
-}
+    async function revealAndScore(){
+        const gameRef = db.collection('games').doc(gameId);
+        const g = (await gameRef.get()).data();
+        const q = g.questions?.[g.currentQuestionIndex];
+        if(!q){ return; }
+        const correctIndex = q.answer;
+        const playersSnap = await gameRef.collection('players').get();
+        const batch = db.batch();
+        playersSnap.forEach(doc => {
+            const p = doc.data();
+            let add = 0; let delta = 0;
+            if(p.answer === correctIndex){
+                // Basic time bonus: up to +500, diminishes over 15s
+                const t = (p.answeredAt && g.questionStartAt) ? (p.answeredAt - g.questionStartAt) : 15000;
+                delta = Math.max(1000 - Math.floor(t/30), 250); // floor @250
+                add = delta;
+            }
+            batch.update(doc.ref, { score: (p.score||0) + add, lastDelta: add });
+        });
+        await batch.commit();
+        await gameRef.update({ reveal:true });
+    }
 
-async function submitAnswer(i){
-  const ref = db.collection('games').doc(gameId).collection('players').doc(localStorage.getItem('playerId_'+gameId));
-  await ref.update({ answer: i, answeredAt: now() });
-  $('#playerFeedback').textContent = 'Answer locked!';
-}
+    function renderHostRound(g){
+        $('#hostInfo').textContent = `State: ${g.state} · Q: ${g.currentQuestionIndex+1}/${g.qCount||0} · Reveal: ${!!g.reveal}`;
+        const box = $('#hostRound'); box.innerHTML = '';
+        const q = g.questions?.[g.currentQuestionIndex];
+        if(!q){ box.innerHTML = '<div class="muted">No active question.</div>'; return; }
+        const title = document.createElement('div');
+        title.innerHTML = `<strong>${q.text}</strong>`; box.appendChild(title);
+        const stats = document.createElement('div'); stats.className = 'grid';
+        // Aggregate answers quickly (client side).
+        const counts = [0,0,0,0];
+        db.collection('games').doc(gameId).collection('players').get().then(snap=>{
+            snap.forEach(d=>{ const a = d.data().answer; if(a!=null && counts[a]!=null) counts[a]++; });
+            q.choices.forEach((c,i)=>{
+                const row = document.createElement('div');
+                const pct = (counts[i] / Math.max(1, snap.size))*100;
+                row.innerHTML = `<div>${String.fromCharCode(65+i)}. ${c}</div><div class="bar"><span style="width:${pct}%"></span></div>`;
+                stats.appendChild(row);
+            });
+        });
+        box.appendChild(stats);
+    }
 
-// =========================
-// 📽️ Projector mode toggle
-// =========================
-// Open another tab with #host-<gameId> and click "Projector" via browser bookmark.
-// For simplicity, we reuse the host subscription; host can just switch to this view:
-const projToggle = document.createElement('button');
-projToggle.textContent = 'Open Projector'; projToggle.className='ghost';
-projToggle.onclick = () => { show('#projector'); };
-$('#header').appendChild(projToggle);
+    async function renderScoreboard(){
+        const table = $('#scoreTable');
+        const snap = await db.collection('games').doc(gameId).collection('players').orderBy('score','desc').get();
+        table.innerHTML = '<tr><th>Player</th><th>Score</th><th>Δ</th></tr>';
+        snap.forEach(doc => {
+            const p = doc.data();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${p.name}</td><td>${p.score||0}</td><td>${p.lastDelta?`<span class='score-up'>+${p.lastDelta}</span>`:''}</td>`;
+            table.appendChild(tr);
+        });
+    }
+
+    function renderProjector(g){
+        const q = g.questions?.[g.currentQuestionIndex];
+        const projQ = $('#projQuestion');
+        const projC = $('#projChoices');
+        const projS = $('#projStats');
+        const img = $('#projImage');
+        const vid = $('#projVideo');
+
+        const showImg = (src) => {
+            if(!img) return;
+            if(src){ img.src = src; img.style.display = 'block'; } else { img.removeAttribute('src'); img.style.display = 'none'; }
+        };
+        const showVid = (src) => {
+            if(!vid) return;
+            if(src){ if(vid.getAttribute('src') !== src){ vid.setAttribute('src', src); vid.load(); }
+                vid.style.display = 'block';
+            } else { vid.pause(); vid.removeAttribute('src'); vid.load(); vid.style.display = 'none'; }
+        };
+
+        if(g.state==='question' && q){
+            $('#projTitle').textContent = `Question ${g.currentQuestionIndex+1}`;
+            projQ.textContent = q.text;
+            // Show still image during question, hide video
+            showImg(q.image || q.imageUrl);
+            showVid(null);
+            projC.innerHTML = '';
+            projS.innerHTML = '';
+            q.choices.forEach((c,i)=>{
+                const div = document.createElement('div');
+                div.className = 'option';
+                div.textContent = `${String.fromCharCode(65+i)}. ${c}`;
+                projC.appendChild(div);
+            });
+        } else if(g.state==='question' && !q){
+            $('#projTitle').textContent = 'Waiting…';
+            projQ.textContent='—';
+            projC.innerHTML='';
+            projS.innerHTML='';
+            showImg(null); showVid(null);
+        }
+
+        if(g.reveal && q){
+            // Swap to full clip on reveal
+            showImg(null);
+            showVid(q.videoFull);
+            // Mark correct choice
+            $$('#projChoices .option').forEach((el, i)=>{
+                el.classList.toggle('correct', i===q.answer);
+            });
+            // Quick stats
+            db.collection('games').doc(gameId).collection('players').get().then(snap=>{
+                const counts = new Array(q.choices.length).fill(0);
+                snap.forEach(d=>{ const a = d.data().answer; if(a!=null && counts[a]!=null) counts[a]++; });
+                projS.innerHTML = '';
+                q.choices.forEach((c,i)=>{
+                    const row = document.createElement('div');
+                    const n = counts[i];
+                    row.innerHTML = `<div class=\"row\" style=\"justify-content:space-between\"><div>${String.fromCharCode(65+i)}. ${c}</div><div class=\"pill\">${n}</div></div>`;
+                    projS.appendChild(row);
+                });
+            });
+        }
+    }
+
+    // =========================
+    // 🙋 Player logic
+    // =========================
+    async function joinGameAsPlayer(){
+        pin = $('#joinPin').value.trim();
+        const name = $('#playerName').value.trim();
+        if(pin.length<4 || !name){ $('#joinStatus').textContent='Enter a valid PIN and name.'; return; }
+
+        // Lookup game by PIN
+        const snap = await db.collection('games').where('pin','==', pin).limit(1).get();
+        if(snap.empty){ $('#joinStatus').textContent = 'Game not found.'; return; }
+        const gref = snap.docs[0].ref; gameId = gref.id;
+
+        // Create / Upsert player
+        const id = localStorage.getItem('playerId_'+gameId) || uid();
+        localStorage.setItem('playerId_'+gameId, id);
+        player = { id, name };
+        await gref.collection('players').doc(id).set({ name, score:0, joinedAt: now(), answer: null, answeredAt: null }, { merge:true });
+
+        subscribePlayer(gref);
+        $('#playerPin').textContent = pin;
+        $('#playerHeader').textContent = `${name}`;
+        show('#player');
+    }
+
+    function subscribePlayer(gref){
+        unsubGame && unsubGame();
+        unsubPlayers && unsubPlayers();
+
+        unsubGame = gref.onSnapshot(snap => {
+            if(!snap.exists) return;
+            const g = snap.data();
+            renderPlayer(g);
+            // Update projector too if open in another tab
+            renderProjector(g);
+        });
+
+        unsubPlayers = gref.collection('players').doc(localStorage.getItem('playerId_'+gameId)).onSnapshot(snap => {
+            const me = snap.data();
+            if(me){ $('#playerScore').textContent = `Score: ${me.score||0}`; if(me.lastDelta){ $('#playerFeedback').innerHTML = `<span class='score-up'>+${me.lastDelta}</span>`; } }
+        });
+    }
+
+    function renderPlayer(g){
+        const q = g.questions?.[g.currentQuestionIndex];
+        const box = $('#playerChoices');
+        if(g.state==='lobby'){
+            $('#playerQuestion').textContent = 'Waiting for host to start…'; box.innerHTML=''; $('#playerFeedback').textContent=''; return;
+        }
+        if(g.state==='ended'){
+            $('#playerQuestion').textContent = 'Game over! 🎉'; box.innerHTML=''; return; }
+
+        if(g.state==='question' && q){
+            $('#playerQuestion').textContent = q.text; box.innerHTML = '';
+            q.choices.forEach((c,i)=>{
+                const btn = document.createElement('button');
+                btn.className = 'option'; btn.textContent = `${String.fromCharCode(65+i)}. ${c}`;
+                btn.onclick = () => submitAnswer(i);
+                box.appendChild(btn);
+            });
+        }
+        if(g.reveal && q){
+            // After reveal, freeze options and highlight
+            $$('#playerChoices .option').forEach((el, i)=>{
+                el.disabled = true; el.classList.toggle('correct', i===q.answer);
+            });
+        }
+    }
+
+    async function submitAnswer(i){
+        const ref = db.collection('games').doc(gameId).collection('players').doc(localStorage.getItem('playerId_'+gameId));
+        await ref.update({ answer: i, answeredAt: now() });
+        $('#playerFeedback').textContent = 'Answer locked!';
+    }
+
+    // =========================
+    // 📽️ Projector mode toggle
+    // =========================
+    // Open another tab with #host-<gameId> and click "Projector" via browser bookmark.
+    // For simplicity, we reuse the host subscription; host can just switch to this view:
+    const projToggle = document.createElement('button');
+    projToggle.textContent = 'Open Projector'; projToggle.className='ghost';
+    projToggle.onclick = () => { show('#projector'); };
+    $('#header').appendChild(projToggle);
 
 </script>
 </body>
