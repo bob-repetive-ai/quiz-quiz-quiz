@@ -102,8 +102,8 @@
   {"text":"Wat gebeurt er hierna?",
    "choices":["Rookt dikke jonko","Loopt op zijn vingers weg","Eet spaghetti","Doet een peace teken"],
    "answer":2,
-   "image":"images/q1-image.jpeg",
-   "videoFull":"videos/q1-video.mp4"}
+   "image":"https://bob-repetive-ai.github.io/quiz-quiz-quiz/images/q1-image.jpeg",
+   "videoFull":"https://bob-repetive-ai.github.io/quiz-quiz-quiz/images/q1-video.mp4"}
 ]
           </textarea>
                 <div class="right"><button id="saveQuestionsBtn">Save Questions</button></div>
@@ -363,8 +363,8 @@
         const title = document.createElement('div');
         title.innerHTML = `<strong>${q.text}</strong>`; box.appendChild(title);
         const stats = document.createElement('div'); stats.className = 'grid';
-        // Aggregate answers quickly (client side).
-        const counts = [0,0,0,0];
+        // Aggregate answers quickly (client side) with dynamic choice count.
+        const counts = new Array(q.choices.length).fill(0);
         db.collection('games').doc(gameId).collection('players').get().then(snap=>{
             snap.forEach(d=>{ const a = d.data().answer; if(a!=null && counts[a]!=null) counts[a]++; });
             q.choices.forEach((c,i)=>{
@@ -399,17 +399,23 @@
 
         const showImg = (src) => {
             if(!img) return;
-            if(src){ img.src = src; img.style.display = 'block'; } else { img.removeAttribute('src'); img.style.display = 'none'; }
+            if(src){
+                img.onerror = () => { console.warn('Image failed to load:', src); img.style.display='none'; };
+                img.src = src; img.style.display = 'block';
+            } else {
+                img.removeAttribute('src'); img.style.display = 'none';
+            }
         };
         const showVid = (src) => {
             if(!vid) return;
             if(src){
+                vid.onerror = () => { console.warn('Video failed to load:', src); };
                 if(vid.getAttribute('src') !== src){ vid.setAttribute('src', src); vid.load(); }
                 vid.style.display = 'block';
                 vid.controls = true; // show controls so host can play
                 vid.muted = true;   // improves chance of autoplay on reveal
             } else {
-                vid.pause();
+                try{ vid.pause(); }catch(e){}
                 vid.removeAttribute('src');
                 vid.load();
                 vid.style.display = 'none';
